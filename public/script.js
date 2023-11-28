@@ -219,6 +219,10 @@ function circleAnimation(centerX, centerY, radius) {
 }
 
 function writeText(ctx, txt, x, y) {
+    // 在其他人的画布上字体显示的一样
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'left';
+    ctx.font = 'italic bold 20px Arial, sans-serif';
     ctx.fillText(txt, x - 4, y - 4);
     console.log("Text Written in context", ctx)
 }
@@ -231,7 +235,7 @@ function ctxerase(ctx, x, y) {
 }
 function erase(x, y) {
     ctxerase(localCTX, x, y);
-    for (let iCTX of remoteCtxMap.values()) {
+    for(let iCTX of remoteCtxMap.values()) {
         ctxerase(iCTX, x, y);
     }
 }
@@ -243,14 +247,14 @@ function ctxreset(ctx) {
 function reset() {
     ctxreset(localCTX);
     ctxreset(animationCTX);
-    for (let iCTX of remoteCtxMap.values()) {
+    for(let iCTX of remoteCtxMap.values()) {
         ctxreset(iCTX);
     }
 }
 function pickColor(ctx, color) {
     ctx.beginPath()
     ctx.strokeStyle = color;
-    ctx.color = color;
+    localCTX.color = color;
     console.log("Color", color, "Picked in context", ctx)
 }
 
@@ -264,15 +268,18 @@ window.onmousedown = (e) => {
     localBoard.y = e.clientY - localBoard.rect.top;
     let x = localBoard.x; let y = localBoard.y;
 
-    localCTX.moveTo(x, y);
-    io.emit('down', { x, y, receivedInviteCode });
-    localBoard.pressed = true;
+    // 检查点击是否在画布内
+    // if (x >= 0 && x <= localBoard.canvas.width && y >= 0 && y <= localBoard.canvas.height) {
+        localCTX.moveTo(x, y);
+        io.emit('down', { x, y });
+        localBoard.pressed = true;
+    // }
 
     switch (localBoard.drawMode) {
         case 'eraser': {
             localBoard.eraserMode = true;
-            erase(localCTX, x, y);
-            io.emit('eraser', { x, y, receivedInviteCode });
+            erase(localCTX,x,y);
+            io.emit('eraser', {x, y});
             break;
         }
     }
@@ -287,21 +294,27 @@ window.onmouseup = (e) => {
             let x = localBoard.x; let y = localBoard.y;
             let width = localBoard.width; let height = localBoard.height;
 
-            drawRectangle(localCTX, x, y, width, height);
-            ctxclear(animationCTX);
-            io.emit('drawRect', { x, y, width, height, receivedInviteCode });
+            // 检查是否发生在画布里
+            if (x >= 0 && x <= localBoard.canvas.width && y >= 0 && y <= localBoard.canvas.height) {
+                drawRectangle(localCTX, x, y, width, height);
+                ctxclear(animationCTX);
+                io.emit('drawRect', {x, y, width, height});
+            }
             break;
         }
         case 'circle': {
             let x = localBoard.x; let y = localBoard.y;
-            let centerX = (e.clientX - localBoard.rect.left + x) / 2;
-            let centerY = (e.clientY - localBoard.rect.top + y) / 2;
-            localBoard.radius = Math.sqrt(Math.pow(e.clientX - localBoard.rect.left - centerX, 2) + Math.pow(e.clientY - localBoard.rect.top - centerY, 2));
-            let radius = localBoard.radius;
 
-            drawCircle(localCTX, centerX, centerY, radius);
-            ctxclear(animationCTX);
-            io.emit('drawCirc', { centerX, centerY, radius, receivedInviteCode });
+            // 检查是否发生在画布里
+            if (x >= 0 && x <= localBoard.canvas.width && y >= 0 && y <= localBoard.canvas.height) {
+                let centerX = (e.clientX - localBoard.rect.left + x) / 2;
+                let centerY = (e.clientY - localBoard.rect.top + y) / 2;
+                localBoard.radius = Math.sqrt(Math.pow(e.clientX - localBoard.rect.left - centerX, 2) + Math.pow(e.clientY - localBoard.rect.top - centerY, 2));
+                let radius = localBoard.radius;
+                drawCircle(localCTX, centerX, centerY, radius);
+                ctxclear(animationCTX);
+                io.emit('drawCirc', {centerX, centerY, radius});
+            }
             break;
         }
     }
@@ -314,7 +327,7 @@ window.onmousemove = (e) => {
             if (localBoard.pressed != true) break;
             let x = localBoard.x; let y = localBoard.y;
             drawLine(localCTX, x, y);
-            io.emit('drawLine', { x, y, receivedInviteCode })
+            io.emit('drawLine', {x, y})
             break;
         }
         case 'eraser': {
@@ -322,18 +335,22 @@ window.onmousemove = (e) => {
             localBoard.y = e.clientY - localBoard.rect.top;
             if (localBoard.eraserMode != true) break;
             let x = localBoard.x; let y = localBoard.y;
-            erase(x, y);
-            io.emit('eraser', { x, y, receivedInviteCode });
+            erase(x,y);
+            io.emit('eraser', {x, y});
             break;
         }
-        case 'rectangle': {
+        case 'rectangle':{
             if (localBoard.pressed != true) break;
             localBoard.width = e.clientX - localBoard.rect.left - localBoard.x;
             localBoard.height = e.clientY - localBoard.rect.top - localBoard.y;
             let x = localBoard.x; let y = localBoard.y;
             let width = localBoard.width; let height = localBoard.height;
+            
+            // 检查是否发生在画布里
+            if (x >= 0 && x <= localBoard.canvas.width && y >= 0 && y <= localBoard.canvas.height) {
+                rectangleAnimation(x, y, width, height);
+            }
 
-            rectangleAnimation(x, y, width, height, receivedInviteCode);
             break;
         }
         case 'circle': {
@@ -343,8 +360,11 @@ window.onmousemove = (e) => {
             let centerY = (e.clientY - localBoard.rect.top + y) / 2;
             localBoard.radius = Math.sqrt(Math.pow(e.clientX - localBoard.rect.left - centerX, 2) + Math.pow(e.clientY - localBoard.rect.top - centerY, 2));
             let radius = localBoard.radius;
-
-            circleAnimation(centerX, centerY, radius);
+            
+            // 检查是否发生在画布里
+            if (x >= 0 && x <= localBoard.canvas.width && y >= 0 && y <= localBoard.canvas.height) {
+                circleAnimation(centerX, centerY, radius);
+            }
             break;
         }
     }
@@ -355,12 +375,14 @@ window.onmousemove = (e) => {
 handle tool that requires mouseClick: text tool
 ===============================================
 */
+
+// 没有按回车，重新单击，文本框消失
 const textTool = {
     hasInput: false,
+    inputElement: null, // 保存当前输入框的引用
 
     addInput(x, y) {
-        var input = document.createElement('input');
-
+        const input = document.createElement('input');
         input.type = 'text';
         input.style.position = 'fixed';
         input.style.left = (x - 4) + 'px';
@@ -369,36 +391,55 @@ const textTool = {
         input.onkeydown = textTool.handleEnter;
 
         document.body.appendChild(input);
-
         input.focus();
 
-        hasInput = true;
+        textTool.inputElement = input; // 保存输入框的引用
+        textTool.hasInput = true;
     },
 
     handleEnter(e) {
-        var keyCode = e.keyCode;
+        const keyCode = e.keyCode;
         if (keyCode === 13) {
             textTool.drawText(this.value, parseInt(this.style.left, 10), parseInt(this.style.top, 10));
             document.body.removeChild(this);
-            hasInput = false;
+            textTool.hasInput = false;
         }
     },
 
     drawText(txt, x, y) {
         localCTX.textBaseline = 'top';
         localCTX.textAlign = 'left';
-        localCTX.font = font;
+        localCTX.font = 'italic bold 20px Arial, sans-serif';
         localCTX.fillText(txt, x - 4, y - 4);
-        io.emit('writeText', { txt, x, y })
+        io.emit('writeText', { txt, x, y });
+    },
+
+    hideInput() { // 隐藏当前输入框
+        if (textTool.inputElement) {
+            document.body.removeChild(textTool.inputElement);
+            textTool.inputElement = null;
+            textTool.hasInput = false;
+        }
     },
 };
 
-// 文本框
-localBoard.onclick = function (e) {
+// 换成 window.onclick，且 输入文本框的点击事件只发生在画布里
+window.onclick = function (e) {
     if (localBoard.drawMode == 'text') {
-        if (textTool.hasInput) return;
-        x = e.clientX - rect.left;
-        y = e.clientY - rect.top;;
-        textTool.addInput(x, y);
+        // 获取点击坐标相对于画布的坐标
+        const rect = localBoard.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // 检查是否在画布内点击
+        if (x >= 0 && x <= localBoard.canvas.width && y >= 0 && y <= localBoard.canvas.height) {
+            if (textTool.hasInput) {
+                textTool.hideInput(); // 如果已有输入框，隐藏它
+            } else {
+                textTool.addInput(x, y); // 否则添加输入框
+            }
+        } else {
+            textTool.hideInput(); // 点击画布外，隐藏输入框
+        }
     }
 }
