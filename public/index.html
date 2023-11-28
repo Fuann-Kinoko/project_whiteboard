@@ -7,6 +7,7 @@
     <title>Login Page</title>
     <style>
         body {
+            background-color: #f0f0f0;
             font-family: Arial, sans-serif;
             display: flex;
             align-items: center;
@@ -14,8 +15,12 @@
             height: 100vh;
             margin: 0;
         }
-
+        img {
+            height: 185.7px;
+            width: 246px;
+        }
         .login-container {
+            margin-top: -100px;
             text-align: center;
         }
 
@@ -34,6 +39,7 @@
 
 <body>
     <div class="login-container">
+    <img src="./img/whiteboard.png" class="img">
         <h2>Login</h2>
         <input type="text" id="inviteCode" placeholder="Enter invite code">
         <button onclick="login()">Login</button>
