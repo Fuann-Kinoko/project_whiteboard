@@ -11,11 +11,11 @@ io.on('loginFailed', () => {
 io.on('createSuccess', ({newInviteCode}) => {
     localStorage.setItem('inviteCode', newInviteCode);
     console.log('New invite code:', newInviteCode);
-    io.emit('createCanvas', { newInviteCode });
+    io.emit('createSession', { newInviteCode });
     window.location.href = "./paint.html";
 })
 io.on('createFailed', () => {
-    createCanvas();
+    createSession();
 })
 
 function login() {
@@ -24,7 +24,7 @@ function login() {
     io.emit('verify', { inviteCode });
 }
 
-function createCanvas() {
+function createSession() {
     const newInviteCode = generateInviteCode(6);
     io.emit('existedCode', { newInviteCode });
 }

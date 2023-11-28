@@ -49,12 +49,12 @@ init board
 const receivedInviteCode = localStorage.getItem('inviteCode');
 document.getElementById('inviteCodeDisplay').innerText = "邀请码: " + receivedInviteCode;
 
-io.emit('onCanvas', { receivedInviteCode });
+io.emit('onSession', { receivedInviteCode });
 
 // local board settings
 let localBoard = new iBoard(document.getElementById('board'), 'board');
 let localCTX = localBoard.ctx;
-let animationBoard = new iBoard(document.getElementById('animation', 'animation'));
+let animationBoard = new iBoard(document.getElementById('animation'), 'animation');
 let animationCTX = animationBoard.ctx;
 
 // init reserved for remote canvas
@@ -149,8 +149,8 @@ let handleByCavnasID = (id, handleContent) => {
     }
 }
 
-io.on('onconnect', ({ id }) => {
-    localBoard.canvas.id = id;
+io.on('onconnect', ({id}) => {
+    // localBoard.canvas.id = id;
     console.log("current board canvas is", localBoard.canvas);
 })
 io.on('ondown', ({ x, y, id }) => {
@@ -248,7 +248,7 @@ function reset() {
 function pickColor(ctx, color) {
     ctx.beginPath()
     ctx.strokeStyle = color;
-    localCTX.color = color;
+    ctx.color = color;
     console.log("Color", color, "Picked in context", ctx)
 }
 
