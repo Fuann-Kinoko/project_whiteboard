@@ -115,11 +115,9 @@ addDrawModeChangeEvent(
 function code() {
     navigator.clipboard.writeText(receivedInviteCode)
         .then(() => {
-            console.log('Text successfully copied to clipboard');
+            alert('邀请码已复制到剪贴板');
         })
-        .catch(err => {
-            console.error('Unable to copy text to clipboard', err);
-        });
+        .catch(err => { });
 }
 
 // quit
