@@ -1,8 +1,10 @@
 var io = io().connect('http://localhost:8080')
+var username
 
 // 监听服务器
 io.on('loginSuccess', ({inviteCode}) => {
     localStorage.setItem('inviteCode', inviteCode);
+    localStorage.setItem('username', username);
     window.location.href = "./paint.html";
 })
 io.on('loginFailed', () => {
@@ -10,6 +12,7 @@ io.on('loginFailed', () => {
 })
 io.on('createSuccess', ({newInviteCode}) => {
     localStorage.setItem('inviteCode', newInviteCode);
+    localStorage.setItem('username', username);
     console.log('New invite code:', newInviteCode);
     io.emit('createSession', { newInviteCode });
     window.location.href = "./paint.html";
@@ -19,14 +22,24 @@ io.on('createFailed', () => {
 })
 
 function login() {
-    const inviteCode = document.getElementById('inviteCode').value;
-    console.log(`${inviteCode}验证`)
-    io.emit('verify', { inviteCode });
+    username = document.getElementById('username').value;
+    if(!username){
+        alert("用户名不能为空！")
+    }else{
+        const inviteCode = document.getElementById('inviteCode').value;
+        console.log(`${inviteCode}验证`)
+        io.emit('verify', { inviteCode });
+    }
 }
 
 function createSession() {
-    const newInviteCode = generateInviteCode(6);
-    io.emit('existedCode', { newInviteCode });
+    username = document.getElementById('username').value;
+    if(!username){
+        alert("用户名不能为空！")
+    }else{
+        const newInviteCode = generateInviteCode(6);
+        io.emit('existedCode', { newInviteCode });
+    }
 }
 
 function generateInviteCode(length) {
