@@ -68,7 +68,7 @@ addClickEventListner for buttons
 ===========================
 */
 document.addEventListener('DOMContentLoaded', function () {
-    buttonLst = [pencilButton, rectangleButton, circleButton, textButton, eraserButton, resetButton];
+    const buttonLst = [pencilButton, rectangleButton, circleButton, textButton, eraserButton, resetButton];
     let buttons = document.querySelectorAll('.button');
     buttons.forEach(function (button) {
         if (buttonLst.includes(button)) {
@@ -387,7 +387,7 @@ const textTool = {
         localCTX.textAlign = 'left';
         localCTX.font = font;
         localCTX.fillText(txt, x - 4, y - 4);
-        io.emit('writeText', { txt, x, y })
+        io.emit('writeText', { txt, x, y, receivedInviteCode })
     },
 };
 
