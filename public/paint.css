@@ -1,4 +1,5 @@
 body {
+    background-color: #f0f0f0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -11,6 +12,7 @@ body {
     margin-top: 20px;
 }
 #stack {
+    background-color: #ffffff;
     border: 3px solid #000;
     border-radius: 5px;
     position: relative;
@@ -26,7 +28,6 @@ body {
 
 #stack>canvas#animation {
     position: absolute;
-    top: 2.5%;
 }
 
 .button {
