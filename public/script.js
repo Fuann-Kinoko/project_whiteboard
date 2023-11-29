@@ -234,11 +234,19 @@ function ctxerase(ctx, x, y) {
     ctx.globalCompositeOperation = 'source-over'; // 恢复混合模式
 }
 function erase(x, y) {
+
     ctxerase(localCTX, x, y);
     for (let iCTX of remoteCtxMap.values()) {
         ctxerase(iCTX, x, y);
     }
 }
+function eraseAnimation(x,y){
+    animationCTX.beginPath();
+    animationCTX.arc(x, y, 30, 0, Math.PI * 2);
+    animationCTX.clearRect(0, 0, localBoard.canvas.width, localBoard.canvas.height);
+    animationCTX.stroke();
+}
+
 function ctxreset(ctx) {
     ctxclear(ctx);
     ctx.beginPath();  // clear previous path
@@ -282,6 +290,7 @@ window.onmousedown = (e) => {
 
     localCTX.moveTo(x, y);
     io.emit('down', { x, y, receivedInviteCode });
+    // io.emit('boardcastName', { x, y, username })
     localBoard.pressed = true;
 
     switch (localBoard.drawMode) {
@@ -303,6 +312,7 @@ window.onmouseup = (e) => {
             break;
         }
         case 'eraser': {
+            ctxclear(animationCTX);
             io.emit('finishDraw', {});
             break;
         }
@@ -353,6 +363,7 @@ window.onmousemove = (e) => {
             if (localBoard.eraserMode != true) break;
             let x = localBoard.x; let y = localBoard.y;
             erase(x, y);
+            eraseAnimation(x,y);
             io.emit('eraser', { x, y, receivedInviteCode });
             if (localBoard.pressed) {
                 io.emit('boardcastName', { x, y, username })
