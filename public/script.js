@@ -46,7 +46,9 @@ init board
 ===========
 */
 
+const username = localStorage.getItem('username');
 const receivedInviteCode = localStorage.getItem('inviteCode');
+document.getElementById('nameDisplay').innerText = "用户: " + username;
 document.getElementById('inviteCodeDisplay').innerText = "邀请码: " + receivedInviteCode;
 
 io.emit('onSession', { receivedInviteCode });
@@ -56,6 +58,9 @@ let localBoard = new iBoard(document.getElementById('board'), 'board');
 let localCTX = localBoard.ctx;
 let animationBoard = new iBoard(document.getElementById('animation'), 'animation');
 let animationCTX = animationBoard.ctx;
+let nameBoard = new iBoard(document.getElementById('name'), 'name');
+let nameCTX = nameBoard.ctx;
+nameCTX.font = '15px "Microsoft YaHei", sans-serif';
 
 // init reserved for remote canvas
 // one board has only one 2D ctx and one canvas
@@ -68,7 +73,7 @@ addClickEventListner for buttons
 ===========================
 */
 document.addEventListener('DOMContentLoaded', function () {
-    buttonLst = [pencilButton, rectangleButton, circleButton, textButton, eraserButton, resetButton];
+    buttonLst = [pencilButton, rectangleButton, circleButton, textButton, eraserButton];
     let buttons = document.querySelectorAll('.button');
     buttons.forEach(function (button) {
         if (buttonLst.includes(button)) {
@@ -104,7 +109,6 @@ addRegularDrawmodeChangeEvent(eraserButton, 'eraser');
 addDrawModeChangeEvent(
     resetButton,
     function () {
-        localBoard.drawMode = 'reset';
         console.log("reset");
         reset();
         io.emit('reset', { receivedInviteCode });
@@ -115,11 +119,9 @@ addDrawModeChangeEvent(
 function code() {
     navigator.clipboard.writeText(receivedInviteCode)
         .then(() => {
-            console.log('Text successfully copied to clipboard');
+            alert('邀请码已复制到剪贴板');
         })
-        .catch(err => {
-            console.error('Unable to copy text to clipboard', err);
-        });
+        .catch(err => { });
 }
 
 // quit
@@ -151,9 +153,11 @@ let handleByCavnasID = (id, handleContent) => {
     }
 }
 
-io.on('onconnect', ({id}) => {
+io.on('onconnect', ({ id }) => {
+    // it is intended not to modify the canvas id of localBoard
+    // canvas `id` will specifically redo the paintActions happen before connection
+    // on the contrast, canvas `board` is the main canvas and displays current paintActions
     // localBoard.canvas.id = id;
-    console.log("current board canvas is", localBoard.canvas);
 })
 io.on('ondown', ({ x, y, id }) => {
     handleByCavnasID(id, (ctx) => { ctx.moveTo(x, y); })
@@ -175,6 +179,8 @@ io.on('onreset', () => reset())
 io.on('onpickColor', ({ color, id }) => {
     handleByCavnasID(id, (ctx) => { pickColor(ctx, color); })
 })
+io.on('onname', ({ x, y, username }) => { nameRect(x, y, username); })
+io.on('onfinish', () => { nameCTX.clearRect(0, 0, localBoard.canvas.width, localBoard.canvas.height); })
 
 
 function ctxclear(ctx) {
@@ -235,10 +241,17 @@ function ctxerase(ctx, x, y) {
 }
 function erase(x, y) {
     ctxerase(localCTX, x, y);
-    for(let iCTX of remoteCtxMap.values()) {
+    for (let iCTX of remoteCtxMap.values()) {
         ctxerase(iCTX, x, y);
     }
 }
+function eraseAnimation(x, y) {
+    animationCTX.beginPath();
+    animationCTX.arc(x, y, 30, 0, Math.PI * 2);
+    animationCTX.clearRect(0, 0, localBoard.canvas.width, localBoard.canvas.height);
+    animationCTX.stroke();
+}
+
 function ctxreset(ctx) {
     ctxclear(ctx);
     ctx.beginPath();  // clear previous path
@@ -247,15 +260,27 @@ function ctxreset(ctx) {
 function reset() {
     ctxreset(localCTX);
     ctxreset(animationCTX);
-    for(let iCTX of remoteCtxMap.values()) {
+    for (let iCTX of remoteCtxMap.values()) {
         ctxreset(iCTX);
     }
 }
 function pickColor(ctx, color) {
     ctx.beginPath()
     ctx.strokeStyle = color;
-    localCTX.color = color;
+    ctx.color = color;
     console.log("Color", color, "Picked in context", ctx)
+}
+function nameRect(x, y, name) {
+    const rectx = x + 25;
+    const recty = y - 30;
+    nameCTX.clearRect(0, 0, localBoard.canvas.width, localBoard.canvas.height);
+    const textWidth = nameCTX.measureText(name).width;
+    // console.log(textWidth)
+    const textHeight = 25;
+    nameCTX.fillStyle = 'rgb(224, 154, 32)';
+    nameCTX.fillRect(rectx, recty - textHeight / 4, textWidth * 2, textHeight);
+    nameCTX.fillStyle = 'white';
+    nameCTX.fillText(name, rectx + textWidth / 2, recty + textHeight / 2);
 }
 
 /*
@@ -268,18 +293,16 @@ window.onmousedown = (e) => {
     localBoard.y = e.clientY - localBoard.rect.top;
     let x = localBoard.x; let y = localBoard.y;
 
-    // 检查点击是否在画布内
-    // if (x >= 0 && x <= localBoard.canvas.width && y >= 0 && y <= localBoard.canvas.height) {
-        localCTX.moveTo(x, y);
-        io.emit('down', { x, y });
-        localBoard.pressed = true;
-    // }
+    localCTX.moveTo(x, y);
+    io.emit('down', { x, y });
+    // io.emit('broadcastName', { x, y, username })
+    localBoard.pressed = true;
 
     switch (localBoard.drawMode) {
         case 'eraser': {
             localBoard.eraserMode = true;
-            erase(localCTX,x,y);
-            io.emit('eraser', {x, y});
+            erase(localCTX, x, y);
+            io.emit('eraser', { x, y });
             break;
         }
     }
@@ -287,7 +310,17 @@ window.onmousedown = (e) => {
 window.onmouseup = (e) => {
     localBoard.pressed = false;
     localBoard.eraserMode = false;
+    ctxclear(nameCTX);
     switch (localBoard.drawMode) {
+        case 'pencil': {
+            io.emit('finishDraw', {});
+            break;
+        }
+        case 'eraser': {
+            ctxclear(animationCTX);
+            io.emit('finishDraw', {});
+            break;
+        }
         case 'rectangle': {
             localBoard.width = e.clientX - localBoard.rect.left - localBoard.x;
             localBoard.height = e.clientY - localBoard.rect.top - localBoard.y;
@@ -298,7 +331,8 @@ window.onmouseup = (e) => {
             if (x >= 0 && x <= localBoard.canvas.width && y >= 0 && y <= localBoard.canvas.height) {
                 drawRectangle(localCTX, x, y, width, height);
                 ctxclear(animationCTX);
-                io.emit('drawRect', {x, y, width, height});
+                io.emit('drawRect', { x, y, width, height });
+                io.emit('finishDraw', {});
             }
             break;
         }
@@ -313,7 +347,8 @@ window.onmouseup = (e) => {
                 let radius = localBoard.radius;
                 drawCircle(localCTX, centerX, centerY, radius);
                 ctxclear(animationCTX);
-                io.emit('drawCirc', {centerX, centerY, radius});
+                io.emit('drawCirc', { centerX, centerY, radius });
+                io.emit('finishDraw', {});
             }
             break;
         }
@@ -327,7 +362,10 @@ window.onmousemove = (e) => {
             if (localBoard.pressed != true) break;
             let x = localBoard.x; let y = localBoard.y;
             drawLine(localCTX, x, y);
-            io.emit('drawLine', {x, y})
+            io.emit('drawLine', { x, y, receivedInviteCode })
+            if (localBoard.pressed) {
+                io.emit('broadcastName', { x, y, username })
+            }
             break;
         }
         case 'eraser': {
@@ -335,22 +373,27 @@ window.onmousemove = (e) => {
             localBoard.y = e.clientY - localBoard.rect.top;
             if (localBoard.eraserMode != true) break;
             let x = localBoard.x; let y = localBoard.y;
-            erase(x,y);
-            io.emit('eraser', {x, y});
-            break;
+            erase(x, y);
+            eraseAnimation(x,y);
+            io.emit('eraser', { x, y });
+            if (localBoard.pressed) {
+                io.emit('broadcastName', { x, y, username })
+            }
         }
-        case 'rectangle':{
+        case 'rectangle': {
             if (localBoard.pressed != true) break;
             localBoard.width = e.clientX - localBoard.rect.left - localBoard.x;
             localBoard.height = e.clientY - localBoard.rect.top - localBoard.y;
             let x = localBoard.x; let y = localBoard.y;
             let width = localBoard.width; let height = localBoard.height;
-            
+
             // 检查是否发生在画布里
             if (x >= 0 && x <= localBoard.canvas.width && y >= 0 && y <= localBoard.canvas.height) {
                 rectangleAnimation(x, y, width, height);
+                if (localBoard.pressed) {
+                    io.emit('broadcastName', { x, y, username })
+                }
             }
-
             break;
         }
         case 'circle': {
@@ -360,10 +403,12 @@ window.onmousemove = (e) => {
             let centerY = (e.clientY - localBoard.rect.top + y) / 2;
             localBoard.radius = Math.sqrt(Math.pow(e.clientX - localBoard.rect.left - centerX, 2) + Math.pow(e.clientY - localBoard.rect.top - centerY, 2));
             let radius = localBoard.radius;
-            
             // 检查是否发生在画布里
             if (x >= 0 && x <= localBoard.canvas.width && y >= 0 && y <= localBoard.canvas.height) {
                 circleAnimation(centerX, centerY, radius);
+                if (localBoard.pressed) {
+                    io.emit('broadcastName', { x, y, username })
+                }
             }
             break;
         }

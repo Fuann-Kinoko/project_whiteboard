@@ -26,7 +26,6 @@ body {
 
 #stack>canvas#animation {
     position: absolute;
-    top: 2.5%;
 }
 
 .button {

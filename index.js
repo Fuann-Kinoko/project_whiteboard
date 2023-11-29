@@ -26,7 +26,7 @@ io.on('connection', (socket) => {
 
     // login and create
     socket.on('verify', (data) => {
-        console.log(`${socket.id}验证${data.inviteCode}`);
+        // console.log(`${socket.id}验证${data.inviteCode}`);
         if (sessionData[data.inviteCode]) {
             connections.forEach((con) => {
                 if (con.id == socket.id) {
@@ -71,11 +71,11 @@ io.on('connection', (socket) => {
         curSession = sessionData[code];
 
         // redo the paint actions happened before the connection
-        for(let i = 0; i < curSession.paintActions.length; i++) {
+        for (let i = 0; i < curSession.paintActions.length; i++) {
             // console.log("paintActions[",i,"]is: ", curSession.paintActions[i])
             curSession.paintActions[i](socket, socket)
         }
-        socket.emit('onpickColor', {color: "#000", id:socket.id}) // reset the color
+        socket.emit('onpickColor', { color: "#000", id: socket.id }) // reset the color
 
         console.log(sessionData[data.receivedInviteCode].users)
     });
@@ -88,7 +88,7 @@ io.on('connection', (socket) => {
             }
         });
         // !! push a lazy function (which contains the emittion)
-        curSession.paintActions.push((con_i, socket_i) => {con_i.emit('ondown', {x: data.x, y: data.y, id: socket_i.id})})
+        curSession.paintActions.push((con_i, socket_i) => { con_i.emit('ondown', { x: data.x, y: data.y, id: socket_i.id }) })
     });
 
     socket.on('drawLine', (data) => {
@@ -98,7 +98,7 @@ io.on('connection', (socket) => {
             }
         });
         // push in a lazy function (which contains the emittion) to be called
-        curSession.paintActions.push((con_i, socket_i) => {con_i.emit('ondrawLine', {x: data.x, y: data.y, id: socket_i.id})})
+        curSession.paintActions.push((con_i, socket_i) => { con_i.emit('ondrawLine', { x: data.x, y: data.y, id: socket_i.id }) })
     });
 
     socket.on('drawRect', (data) => {
@@ -107,7 +107,7 @@ io.on('connection', (socket) => {
                 con.emit('ondrawRect', { x: data.x, y: data.y, width: data.width, height: data.height, id: socket.id });
             }
         });
-        curSession.paintActions.push((con_i, socket_i) => {con_i.emit('ondrawRect', {x: data.x, y: data.y, width: data.width, height: data.height, id:socket_i.id})})
+        curSession.paintActions.push((con_i, socket_i) => { con_i.emit('ondrawRect', { x: data.x, y: data.y, width: data.width, height: data.height, id: socket_i.id }) })
     });
 
     socket.on('drawCirc', (data) => {
@@ -116,7 +116,7 @@ io.on('connection', (socket) => {
                 con.emit('ondrawCirc', { centerX: data.centerX, centerY: data.centerY, radius: data.radius, id: socket.id });
             }
         });
-        curSession.paintActions.push((con_i, socket_i) => {con_i.emit('ondrawCirc', {centerX: data.centerX, centerY: data.centerY, radius: data.radius, id:socket_i.id})})
+        curSession.paintActions.push((con_i, socket_i) => { con_i.emit('ondrawCirc', { centerX: data.centerX, centerY: data.centerY, radius: data.radius, id: socket_i.id }) })
     });
 
     socket.on('writeText', (data) => {
@@ -134,7 +134,7 @@ io.on('connection', (socket) => {
                 con.emit('oneraser', { x: data.x, y: data.y });
             }
         });
-        curSession.paintActions.push((con_i, socket_i) => {con_i.emit('oneraser', {x: data.x, y: data.y})})
+        curSession.paintActions.push((con_i, socket_i) => { con_i.emit('oneraser', { x: data.x, y: data.y }) })
     });
 
     // reset does not save an action, instead it deletes all actions
@@ -153,7 +153,23 @@ io.on('connection', (socket) => {
                 con.emit('onpickColor', { color: data.cur_color, id: socket.id });
             }
         });
-        curSession.paintActions.push((con_i, socket_i) => {con_i.emit('onpickColor', {color: data.cur_color, id:socket_i.id})})
+        curSession.paintActions.push((con_i, socket_i) => { con_i.emit('onpickColor', { color: data.cur_color, id: socket_i.id }) })
+    });
+
+    socket.on('broadcastName', (data) => {
+        connections.forEach((con) => {
+            if (con.id !== socket.id && curSession.users.includes(con.id)) {
+                con.emit('onname', { x: data.x, y: data.y, username: data.username });
+            }
+        });
+    });
+
+    socket.on('finishDraw', () => {
+        connections.forEach((con) => {
+            if (con.id !== socket.id && curSession.users.includes(con.id)) {
+                con.emit('onfinish', {});
+            }
+        });
     });
 
     socket.on('disconnect', (reason) => {
