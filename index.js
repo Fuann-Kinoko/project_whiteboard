@@ -76,6 +76,7 @@ io.on('connection', (socket) => {
             curSession.paintActions[i](socket)
         }
         socket.emit('onpickColor', { color: "#000", id: socket.id }) // reset the color
+        socket.emit('onready', {})
 
         console.log(sessionData[data.receivedInviteCode].users)
     });

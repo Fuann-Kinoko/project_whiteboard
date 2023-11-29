@@ -62,6 +62,7 @@ let nameBoard = new iBoard(document.getElementById('name'), 'name');
 let nameCTX = nameBoard.ctx;
 nameCTX.font = '15px "Microsoft YaHei", sans-serif';
 
+
 // init reserved for remote canvas
 // one board has only one 2D ctx and one canvas
 let remoteCtxMap = new Map();
@@ -158,6 +159,12 @@ io.on('onconnect', ({ id }) => {
     // canvas `id` will specifically redo the paintActions happen before connection
     // on the contrast, canvas `board` is the main canvas and displays current paintActions
     // localBoard.canvas.id = id;
+})
+io.on('onready', () => {
+    let loadingElement = document.getElementById("loading");
+    loadingElement.style.display = 'none';
+    loadingElement.style.zIndex = -1;
+    console.log("loading should disappear")
 })
 io.on('ondown', ({ x, y, id }) => {
     handleByCavnasID(id, (ctx) => { ctx.moveTo(x, y); })
@@ -289,7 +296,8 @@ add mouse event emitter
 =======================
 */
 window.onmousedown = (e) => {
-    if (document.elementFromPoint(e.clientX, e.clientY).className != 'boardCanvas') return;
+    let onHoverElement = document.elementFromPoint(e.clientX, e.clientY)
+    if (onHoverElement === null || onHoverElement.className != 'boardCanvas') return;
     localBoard.x = e.clientX - localBoard.rect.left;
     localBoard.y = e.clientY - localBoard.rect.top;
     let x = localBoard.x; let y = localBoard.y;
@@ -309,6 +317,8 @@ window.onmousedown = (e) => {
     }
 }
 window.onmouseup = (e) => {
+    let onHoverElement = document.elementFromPoint(e.clientX, e.clientY)
+    if (onHoverElement === null || onHoverElement.className != 'boardCanvas') return;
     localBoard.pressed = false;
     localBoard.eraserMode = false;
     ctxclear(nameCTX);
@@ -356,7 +366,11 @@ window.onmouseup = (e) => {
     }
 }
 window.onmousemove = (e) => {
-    if (document.elementFromPoint(e.clientX, e.clientY).className != 'boardCanvas') return;
+    let onHoverElement = document.elementFromPoint(e.clientX, e.clientY)
+    if (onHoverElement === null || onHoverElement.className != 'boardCanvas') {
+        localBoard.pressed = false;
+        return;
+    }
     switch (localBoard.drawMode) {
         case 'pencil': {
             localBoard.x = e.clientX - localBoard.rect.left;
@@ -474,7 +488,8 @@ const textTool = {
 // 换成 window.onclick，且 输入文本框的点击事件只发生在画布里
 window.onclick = function (e) {
     if (localBoard.drawMode != 'text') return;
-    if (document.elementFromPoint(e.clientX, e.clientY).className != 'boardCanvas') return;
+    let onHoverElement = document.elementFromPoint(e.clientX, e.clientY)
+    if (onHoverElement === null || onHoverElement.className != 'boardCanvas') return;
     // 获取点击坐标相对于画布的坐标
     const rect = localBoard.canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
