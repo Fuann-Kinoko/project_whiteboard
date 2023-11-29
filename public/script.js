@@ -289,6 +289,7 @@ add mouse event emitter
 =======================
 */
 window.onmousedown = (e) => {
+    if (document.elementFromPoint(e.clientX, e.clientY).className != 'boardCanvas') return;
     localBoard.x = e.clientX - localBoard.rect.left;
     localBoard.y = e.clientY - localBoard.rect.top;
     let x = localBoard.x; let y = localBoard.y;
@@ -355,6 +356,7 @@ window.onmouseup = (e) => {
     }
 }
 window.onmousemove = (e) => {
+    if (document.elementFromPoint(e.clientX, e.clientY).className != 'boardCanvas') return;
     switch (localBoard.drawMode) {
         case 'pencil': {
             localBoard.x = e.clientX - localBoard.rect.left;
@@ -470,21 +472,21 @@ const textTool = {
 
 // 换成 window.onclick，且 输入文本框的点击事件只发生在画布里
 window.onclick = function (e) {
-    if (localBoard.drawMode == 'text') {
-        // 获取点击坐标相对于画布的坐标
-        const rect = localBoard.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+    if (localBoard.drawMode != 'text') return;
+    if (document.elementFromPoint(e.clientX, e.clientY).className != 'boardCanvas') return;
+    // 获取点击坐标相对于画布的坐标
+    const rect = localBoard.canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
-        // 检查是否在画布内点击
-        if (x >= 0 && x <= localBoard.canvas.width && y >= 0 && y <= localBoard.canvas.height) {
-            if (textTool.hasInput) {
-                textTool.hideInput(); // 如果已有输入框，隐藏它
-            } else {
-                textTool.addInput(x, y); // 否则添加输入框
-            }
+    // 检查是否在画布内点击
+    if (x >= 0 && x <= localBoard.canvas.width && y >= 0 && y <= localBoard.canvas.height) {
+        if (textTool.hasInput) {
+            textTool.hideInput(); // 如果已有输入框，隐藏它
         } else {
-            textTool.hideInput(); // 点击画布外，隐藏输入框
+            textTool.addInput(x, y); // 否则添加输入框
         }
+    } else {
+        textTool.hideInput(); // 点击画布外，隐藏输入框
     }
 }
