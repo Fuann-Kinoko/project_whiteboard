@@ -299,7 +299,10 @@ window.onmouseup = (e) => {
     ctxclear(nameCTX);
     switch (localBoard.drawMode) {
         case 'pencil': {
-            console.log(1)
+            io.emit('finishDraw', {});
+            break;
+        }
+        case 'eraser': {
             io.emit('finishDraw', {});
             break;
         }
@@ -312,6 +315,7 @@ window.onmouseup = (e) => {
             drawRectangle(localCTX, x, y, width, height);
             ctxclear(animationCTX);
             io.emit('drawRect', { x, y, width, height, receivedInviteCode });
+            io.emit('finishDraw', {});
             break;
         }
         case 'circle': {
@@ -324,6 +328,7 @@ window.onmouseup = (e) => {
             drawCircle(localCTX, centerX, centerY, radius);
             ctxclear(animationCTX);
             io.emit('drawCirc', { centerX, centerY, radius, receivedInviteCode });
+            io.emit('finishDraw', {});
             break;
         }
     }
@@ -337,7 +342,6 @@ window.onmousemove = (e) => {
             let x = localBoard.x; let y = localBoard.y;
             drawLine(localCTX, x, y);
             io.emit('drawLine', { x, y, receivedInviteCode })
-            // 生成矩形
             if (localBoard.pressed) {
                 io.emit('boardcastName', { x, y, username })
             }
@@ -351,7 +355,7 @@ window.onmousemove = (e) => {
             erase(x, y);
             io.emit('eraser', { x, y, receivedInviteCode });
             if (localBoard.pressed) {
-                io.emit('boardcastName', { x, y, nameColor, username })
+                io.emit('boardcastName', { x, y, username })
             }
             break;
         }
@@ -362,6 +366,9 @@ window.onmousemove = (e) => {
             let x = localBoard.x; let y = localBoard.y;
             let width = localBoard.width; let height = localBoard.height;
             rectangleAnimation(x, y, width, height);
+            if (localBoard.pressed) {
+                io.emit('boardcastName', { x, y, username })
+            }
             break;
         }
         case 'circle': {
@@ -372,6 +379,9 @@ window.onmousemove = (e) => {
             localBoard.radius = Math.sqrt(Math.pow(e.clientX - localBoard.rect.left - centerX, 2) + Math.pow(e.clientY - localBoard.rect.top - centerY, 2));
             let radius = localBoard.radius;
             circleAnimation(centerX, centerY, radius);
+            if (localBoard.pressed) {
+                io.emit('boardcastName', { x, y, username })
+            }
             break;
         }
     }
