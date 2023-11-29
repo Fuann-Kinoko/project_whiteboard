@@ -381,6 +381,7 @@ window.onmousemove = (e) => {
             if (localBoard.pressed) {
                 io.emit('broadcastName', { x, y, username })
             }
+            break;
         }
         case 'rectangle': {
             if (localBoard.pressed != true) break;
