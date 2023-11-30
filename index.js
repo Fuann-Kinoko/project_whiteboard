@@ -65,8 +65,16 @@ io.on('connection', (socket) => {
     });
     socket.on('onSession', (data) => {
         console.log(`${socket.id}在${data.receivedInviteCode}`)
-
+        if (sessionData[data.receivedInviteCode].users.length === 0) {
+            connections.forEach((con) => {
+                if (con.id === socket.id) {
+                    console.log(`${socket.id}是${data.receivedInviteCode}房主`)
+                    socket.emit('onowner', {})
+                }
+            });
+        }
         sessionData[data.receivedInviteCode].users.push(socket.id);
+
         code = data.receivedInviteCode;
         curSession = sessionData[code];
 
@@ -170,6 +178,15 @@ io.on('connection', (socket) => {
         connections.forEach((con) => {
             if (con.id !== socket.id && curSession.users.includes(con.id)) {
                 con.emit('onfinish', {});
+            }
+        });
+    });
+
+    socket.on('over', (data) => {
+        ic = data.receivedInviteCode
+        connections.forEach((con) => {
+            if (con.id !== socket.id && sessionData[ic].users.includes(con.id)) {
+                con.emit('onover', {});
             }
         });
     });
