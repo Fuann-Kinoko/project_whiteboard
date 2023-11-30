@@ -127,6 +127,7 @@ io.on('connection', (socket) => {
             }
         });
         // TODO: add paintActions for writeText
+        curSession.paintActions.push((con_i, socket_i) => {con_i.emit('onwriteText', {txt: data.txt, x: data.x, y: data.y, id:socket_i.id})});
     });
 
     socket.on('eraser', (data) => {
