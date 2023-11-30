@@ -50,6 +50,7 @@ const username = localStorage.getItem('username');
 const receivedInviteCode = localStorage.getItem('inviteCode');
 document.getElementById('nameDisplay').innerText = "用户: " + username;
 document.getElementById('inviteCodeDisplay').innerText = "邀请码: " + receivedInviteCode;
+let isOwner = false
 
 io.emit('onSession', { receivedInviteCode });
 
@@ -127,6 +128,14 @@ function code() {
 
 // quit
 function quit() {
+    if(isOwner){
+        alert("您退出后将解散房间！");
+        io.emit("over", {receivedInviteCode});
+    }
+    window.location.href = "./index.html";
+}
+
+function quitForOtherReason(){
     window.location.href = "./index.html";
 }
 
@@ -188,6 +197,8 @@ io.on('onpickColor', ({ color, id }) => {
 })
 io.on('onname', ({ x, y, username }) => { nameRect(x, y, username); })
 io.on('onfinish', () => { nameCTX.clearRect(0, 0, localBoard.canvas.width, localBoard.canvas.height); })
+io.on('onowner', () => { isOwner = true })
+io.on('onover', () => { quitForOtherReason()})
 
 
 function ctxclear(ctx) {
